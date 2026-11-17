@@ -212,6 +212,16 @@ const D={
 '📋 Kuponu kopyala':['📋 Schein kopieren','📋 Copy slip','📋 نسخ القسيمة'],
 'Kupon kopyalandı.':['Schein kopiert.','Slip copied.','تم نسخ القسيمة.'],
 'Kopyalanamadı.':['Kopieren fehlgeschlagen.','Could not copy.','تعذّر النسخ.'],
+'Ligler:':['Ligen:','Leagues:','الدوريات:'],
+'Seçim türü:':['Tipp-Art:','Pick type:','نوع الاختيار:'],
+'Maç sonucu':['Spielausgang','Match result','نتيجة المباراة'],
+'Üst':['Über','Over','أكثر'],'Alt':['Unter','Under','أقل'],
+'🔀 Farklı öneri':['🔀 Anderer Vorschlag','🔀 Different suggestion','🔀 اقتراح مختلف'],
+'Filtreleri sıfırla':['Filter zurücksetzen','Reset filters','إعادة ضبط الفلاتر'],
+'Güvenli: en yüksek ihtimalli (banko) seçimler. Oranlar düşük kalır.':['Sicher: die wahrscheinlichsten (Banker-)Tipps. Die Quoten bleiben niedrig.','Safe: the most likely (banker) picks. Odds stay low.','آمن: أكثر الاختيارات احتمالًا (البانكو). تبقى الأودز منخفضة.'],
+'Dengeli: ihtimal ve oran dengesi (yaklaşık 1.5–2.2 oran).':['Ausgewogen: Balance aus Wahrscheinlichkeit und Quote (etwa 1.5–2.2).','Balanced: a mix of probability and odds (around 1.5–2.2).','متوازن: توازن بين الاحتمال والأودز (حوالي 1.5–2.2).'],
+'Riskli: yüksek oranlı seçimler. Tutma ihtimali düşer.':['Riskant: Tipps mit hohen Quoten. Die Trefferchance sinkt.','Risky: high-odds picks. The chance of hitting drops.','مخاطرة: اختيارات بأودز مرتفعة. يقل احتمال النجاح.'],
+'Seçtiğin filtrelerle uygun seçim yok. Filtreleri gevşet, gün sayısını artır ya da minimum oranı düşür.':['Mit deinen Filtern gibt es keinen passenden Tipp. Lockere die Filter, erhöhe die Tageanzahl oder senke die Mindestquote.','No pick matches your filters. Loosen the filters, increase the number of days or lower the minimum odds.','لا يوجد اختيار مناسب لفلاترك. خفّف الفلاتر أو زد عدد الأيام أو خفّض أدنى أودز.'],
 'Takım ara…':['Team suchen…','Search team…','ابحث عن فريق…'],
 'Takım seç…':['Team wählen…','Select team…','اختر فريقًا…'],
 'Karşılaştırma için önce lig verisini yükle (↻).':['Lade zuerst die Ligadaten (↻), um zu vergleichen.','Load the league data first (↻) to compare.','حمّل بيانات الدوري أولًا (↻) للمقارنة.'],
@@ -946,18 +956,25 @@ function oddOf(x,k){
  if(r)return {o:r,real:true};
  return {o:EST_FACTOR/x.r.p[k],real:false};
 }
-function rankPicks(r,mode){
- const set={safe:['1','2','1X','X2','Ü1.5','Ü2.5','A2.5','A3.5','KG+','KG-'],bal:['1','2','1X','X2','Ü2.5','A2.5','KG+','KG-'],risk:['1','2','X','Ü2.5','A2.5','KG+','KG-']}[mode];
- const pen={'1X':.10,'X2':.10,'Ü1.5':.12,'A3.5':.10};
- return set.map(k=>({k,p:r.p[k],s:r.p[k]-(mode==='safe'?0:(pen[k]||0))*(mode==='bal'?1:0)-(mode==='safe'?(pen[k]||0)*0.5:0)})).sort((x,y)=>y.s-x.s);
+const KINDS={win:['1','2'],draw:['X'],dc:['1X','X2','12'],over:['Ü1.5','Ü2.5'],under:['A2.5','A3.5'],kgv:['KG+'],kgy:['KG-']};
+const KLAB={win:'Maç sonucu',draw:'Beraberlik',dc:'Çifte Şans',over:'Üst',under:'Alt',kgv:'KG Var',kgy:'KG Yok'};
+const ALLP=['1','X','2','1X','X2','12','Ü1.5','Ü2.5','A2.5','A3.5','KG+','KG-'];
+function hsh(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|0;return Math.abs(h)%1000/1000}
+function advScore(mode,c){
+ if(mode==='safe')return c.p;
+ if(mode==='risk')return c.o;
+ return c.p*0.5+0.5*Math.max(0,1-Math.abs(c.o-1.8)/1.8);
 }
 function buildAdvice(pool){
- const {n,mode,minOdd}=S.adv;
- const th={safe:.68,bal:.55,risk:.45}[mode];
- const cap=Math.max(2,Math.ceil(n*0.35)),cnt={};
+ const A=S.adv,{n,mode,minOdd}=A,lgs=A.lgs||[],kinds=A.kinds||[],seed=A.seed||0;
+ const allow=kinds.length?new Set(kinds.reduce((s,k)=>s.concat(KINDS[k]||[]),[])):null;
+ const th={safe:.60,bal:.52,risk:.34}[mode];
+ const cap=kinds.length?n:Math.max(2,Math.ceil(n*0.35)),cnt={};
+ const jit=mode==='risk'?0.24:0.08;
  const cands=[];
  pool.items.forEach(x=>{
-  const el=rankPicks(x.r,mode).filter(c=>c.p>=th).map(c=>Object.assign({},c,oddOf(x,c.k))).filter(c=>c.o>=minOdd);
+  if(lgs.length&&!lgs.includes(x.lg.id))return;
+  const el=ALLP.filter(k=>!allow||allow.has(k)).map(k=>Object.assign({k,p:x.r.p[k]},oddOf(x,k))).filter(c=>c.p>=th&&c.o>=minOdd).map(c=>Object.assign(c,{s:advScore(mode,c)+(seed?hsh(x.m.id+'|'+seed+'|'+c.k)*jit:0)})).sort((a,b)=>b.s-a.s);
   if(el.length)cands.push({x,el});
  });
  cands.sort((a,b)=>b.el[0].s-a.el[0].s);
@@ -981,12 +998,19 @@ function viewOner(){
  `<select data-a="advmode"><option value="safe" ${A.mode==='safe'?'selected':''}>Güvenli</option><option value="bal" ${A.mode==='bal'?'selected':''}>Dengeli</option><option value="risk" ${A.mode==='risk'?'selected':''}>Riskli</option></select>`+
  `<select data-a="advdays">${[2,4,7,10].map(d=>`<option value="${d}" ${A.days===d?'selected':''}>${d} gün</option>`).join('')}</select>`+
  `<label style="display:flex;align-items:center;gap:6px">Min. oran <input type="number" step="0.01" min="1" value="${A.minOdd}" data-a="advmin" inputmode="decimal" style="width:70px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:8px"></label></div>`;
+ const HINT={safe:'Güvenli: en yüksek ihtimalli (banko) seçimler. Oranlar düşük kalır.',bal:'Dengeli: ihtimal ve oran dengesi (yaklaşık 1.5–2.2 oran).',risk:'Riskli: yüksek oranlı seçimler. Tutma ihtimali düşer.'};
+ h+=`<div style="color:var(--mut);font-size:12px;margin:0 2px 4px">${HINT[A.mode]}</div>`;
+ const favL=allLeagues().filter(l=>LS.get('favs',DEFAULT_FAVS).includes(l.id)&&l.id!=='FD:WC'&&l.id!=='FD:EC');
+ h+=`<div class="lgh">Ligler:</div><div class="chips">${favL.map(l=>`<span class="chip ${(A.lgs||[]).includes(l.id)?'on':''}" data-a="advlg" data-id="${esc(l.id)}">${l.flag||''} ${esc(l.name)}</span>`).join('')}</div>`;
+ h+=`<div class="lgh">Seçim türü:</div><div class="chips">${Object.keys(KLAB).map(k=>`<span class="chip ${(A.kinds||[]).includes(k)?'on':''}" data-a="advkind" data-v="${k}">${KLAB[k]}</span>`).join('')}</div>`;
+ h+=`<div class="bar"><button class="btn" data-a="advshuffle" style="flex:1">🔀 Farklı öneri</button><button class="btn" data-a="advreset">Filtreleri sıfırla</button></div>`;
  h+=`<div class="bar"><button class="btn gold" data-a="loaddeep" style="flex:1">↻ Verileri güncelle (analiz için)</button></div>`;
  h+=statusBox();
  if(pool.noData.length)h+=`<div class="msg">Veri yok/yetersiz: ${esc(pool.noData.join(', '))}. Güncelle düğmesine bas (football-data.org anahtarın Ayarlar'da olmalı).</div>`;
  if(!pool.items.length){if(!S.busy)h+=`<div class="msg">Seçili aralıkta analiz edilebilir maç yok. Gün sayısını artır ya da verileri güncelle. Ligleri Hafta sekmesindeki çiplerden seçebilirsin.</div>`;return h}
  const adv=buildAdvice(pool);
- if(!adv.length)h+=`<div class="msg">Bu modda ve ${A.minOdd} minimum oranla listeye girecek seçim yok. Modu "Dengeli" veya "Riskli" yapmayı ya da gün sayısını artırmayı dene.</div>`;
+ if(!adv.length&&((A.lgs||[]).length||(A.kinds||[]).length))h+=`<div class="msg">Seçtiğin filtrelerle uygun seçim yok. Filtreleri gevşet, gün sayısını artır ya da minimum oranı düşür.</div>`;
+ else if(!adv.length)h+=`<div class="msg">Bu modda ve ${A.minOdd} minimum oranla listeye girecek seçim yok. Modu "Dengeli" veya "Riskli" yapmayı ya da gün sayısını artırmayı dene.</div>`;
  else{
   const prod=adv.reduce((s,x)=>s*x.pk.p,1),to=adv.reduce((s,x)=>s*x.pk.o,1),anyEst=adv.some(x=>!x.pk.real);
   h+=`<div class="sum"><div><span>Önerilen kupon</span><b>${adv.length} maç</b></div><div><span>Tüm maçların tutma ihtimali</span><b>%${f1(prod*100,1)}</b></div><div><span>Toplam oran${anyEst?' (kısmen tahmini)':''}</span><b>${f1(to)}</b></div><div><span>En düşük seçim güveni</span><b>%${Math.round(Math.min(...adv.map(x=>x.pk.p))*100)}</b></div>${adv.length<A.n?`<div style="color:var(--mut);font-size:12px">İstenen ${A.n} maç için yeterli güvenilir seçim bulunamadı.</div>`:''}<div><button class="btn gold" data-a="advadd" style="flex:1">Kupona aktar</button></div></div>`;
@@ -1137,6 +1161,10 @@ document.addEventListener('click',async ev=>{
   case 'fav':{let f=LS.get('favs',DEFAULT_FAVS);const id=el.dataset.id;f=f.includes(id)?f.filter(x=>x!==id):f.concat(id);LS.set('favs',f);render();break}
   case 'loadall':loadAll(true);break;
   case 'loaddeep':loadAll(false,true);break;
+  case 'advlg':{const l=S.adv.lgs||[];S.adv.lgs=l.includes(el.dataset.id)?l.filter(x=>x!==el.dataset.id):l.concat(el.dataset.id);LS.set('adv',S.adv);render();break}
+  case 'advkind':{const l=S.adv.kinds||[];S.adv.kinds=l.includes(v)?l.filter(x=>x!==v):l.concat(v);LS.set('adv',S.adv);render();break}
+  case 'advshuffle':S.adv.seed=(S.adv.seed||0)+1;LS.set('adv',S.adv);render();break;
+  case 'advreset':S.adv.lgs=[];S.adv.kinds=[];S.adv.seed=0;LS.set('adv',S.adv);render();break;
   case 'advadd':{const adv=buildAdvice(analyzePool(S.adv.days));const cp=LS.get('coupon',[]);adv.forEach(x=>{const ix=cp.findIndex(i=>i.lg===x.lg.id&&i.mid===x.m.id);if(ix>=0){cp[ix].pick=x.pk.k;cp[ix].odd=f1(x.pk.o);cp[ix].est=!x.pk.real}else cp.push({lg:x.lg.id,mid:x.m.id,m:x.m,pick:x.pk.k,odd:f1(x.pk.o),est:!x.pk.real})});LS.set('coupon',cp);S.tab='kupon';LS.set('tab','kupon');render();window.scrollTo(0,0);break}
   case 'swap':{const t=S.cmp.a;S.cmp.a=S.cmp.b;S.cmp.b=t;render();break}
   case 'pick':{const cp=LS.get('coupon',[]);cp[+el.dataset.i].pick=v;LS.set('coupon',cp);render();break}
