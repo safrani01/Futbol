@@ -193,7 +193,7 @@ async function fd(path){
  await fdThrottle();
  return http(FD_BASE+path,{'X-Auth-Token':tok});
 }
-function ts(path){return http(TS_BASE+((LS.get('tskey','3')||'3').trim())+'/'+path)}
+function ts(path){return http(TS_BASE+((LS.get('tskey','123')||'123').trim())+'/'+path)}
 function errText(e){
  const s=e&&e.status;
  if(s==='notoken')return 'Bu lig için football-data.org anahtarı gerekiyor. Ayarlar sekmesinden ücretsiz anahtarını gir (2 dakika sürer).';
