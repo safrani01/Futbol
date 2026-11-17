@@ -222,6 +222,13 @@ const D={
 'Dengeli: ihtimal ve oran dengesi (yaklaşık 1.5–2.2 oran).':['Ausgewogen: Balance aus Wahrscheinlichkeit und Quote (etwa 1.5–2.2).','Balanced: a mix of probability and odds (around 1.5–2.2).','متوازن: توازن بين الاحتمال والأودز (حوالي 1.5–2.2).'],
 'Riskli: yüksek oranlı seçimler. Tutma ihtimali düşer.':['Riskant: Tipps mit hohen Quoten. Die Trefferchance sinkt.','Risky: high-odds picks. The chance of hitting drops.','مخاطرة: اختيارات بأودز مرتفعة. يقل احتمال النجاح.'],
 'Seçtiğin filtrelerle uygun seçim yok. Filtreleri gevşet, gün sayısını artır ya da minimum oranı düşür.':['Mit deinen Filtern gibt es keinen passenden Tipp. Lockere die Filter, erhöhe die Tageanzahl oder senke die Mindestquote.','No pick matches your filters. Loosen the filters, increase the number of days or lower the minimum odds.','لا يوجد اختيار مناسب لفلاترك. خفّف الفلاتر أو زد عدد الأيام أو خفّض أدنى أودز.'],
+'Tahmini değiştir':['Tipp ändern','Change pick','تغيير التوقع'],
+'Otomatik seç':['Automatisch wählen','Choose automatically','اختيار تلقائي'],
+'Listeden çıkar':['Aus der Liste entfernen','Remove from list','إزالة من القائمة'],
+'✓ Listeden çıkar':['✓ Aus der Liste entfernt','✓ Removed from list','✓ أُزيلت من القائمة'],
+'Takım istatistikleri':['Teamstatistiken','Team statistics','إحصاءات الفريقين'],
+'Bu maç için yeterli veri yok.':['Für dieses Spiel gibt es nicht genug Daten.','Not enough data for this match.','لا توجد بيانات كافية لهذه المباراة.'],
+'Maça dokun: istatistikleri gör, tahmini değiştir.':['Tippe auf ein Spiel: Statistiken ansehen, Tipp ändern.','Tap a match: see statistics, change the pick.','المس مباراة: شاهد الإحصاءات وغيّر التوقع.'],
 'Takım ara…':['Team suchen…','Search team…','ابحث عن فريق…'],
 'Takım seç…':['Team wählen…','Select team…','اختر فريقًا…'],
 'Karşılaştırma için önce lig verisini yükle (↻).':['Lade zuerst die Ligadaten (↻), um zu vergleichen.','Load the league data first (↻) to compare.','حمّل بيانات الدوري أولًا (↻) للمقارنة.'],
@@ -971,14 +978,18 @@ function buildAdvice(pool){
  const th={safe:.60,bal:.52,risk:.34}[mode];
  const cap=kinds.length?n:Math.max(2,Math.ceil(n*0.35)),cnt={};
  const jit=mode==='risk'?0.24:0.08;
- const cands=[];
+ const cands=[],forced=[];
  pool.items.forEach(x=>{
+  const ovk=(A.ov||{})[x.lg.id+'|'+x.m.id];
+  if(ovk==='none')return;
+  if(ovk&&x.r.p[ovk]!=null){forced.push({x,el:[Object.assign({k:ovk,p:x.r.p[ovk],s:999,manual:true},oddOf(x,ovk))]});return}
   if(lgs.length&&!lgs.includes(x.lg.id))return;
   const el=ALLP.filter(k=>!allow||allow.has(k)).map(k=>Object.assign({k,p:x.r.p[k]},oddOf(x,k))).filter(c=>c.p>=th&&c.o>=minOdd).map(c=>Object.assign(c,{s:advScore(mode,c)+(seed?hsh(x.m.id+'|'+seed+'|'+c.k)*jit:0)})).sort((a,b)=>b.s-a.s);
   if(el.length)cands.push({x,el});
  });
  cands.sort((a,b)=>b.el[0].s-a.el[0].s);
  const out=[];
+ forced.forEach(c=>{cnt[c.el[0].k]=(cnt[c.el[0].k]||0)+1;out.push(Object.assign({},c.x,{pk:c.el[0]}))});
  for(const c of cands){
   if(out.length>=n)break;
   const pk=c.el.find(e=>(cnt[e.k]||0)<cap);
@@ -1014,10 +1025,11 @@ function viewOner(){
  else{
   const prod=adv.reduce((s,x)=>s*x.pk.p,1),to=adv.reduce((s,x)=>s*x.pk.o,1),anyEst=adv.some(x=>!x.pk.real);
   h+=`<div class="sum"><div><span>Önerilen kupon</span><b>${adv.length} maç</b></div><div><span>Tüm maçların tutma ihtimali</span><b>%${f1(prod*100,1)}</b></div><div><span>Toplam oran${anyEst?' (kısmen tahmini)':''}</span><b>${f1(to)}</b></div><div><span>En düşük seçim güveni</span><b>%${Math.round(Math.min(...adv.map(x=>x.pk.p))*100)}</b></div>${adv.length<A.n?`<div style="color:var(--mut);font-size:12px">İstenen ${A.n} maç için yeterli güvenilir seçim bulunamadı.</div>`:''}<div><button class="btn gold" data-a="advadd" style="flex:1">Kupona aktar</button></div></div>`;
+  h+=`<div style="color:var(--mut);font-size:12px;margin:6px 2px 0">Maça dokun: istatistikleri gör, tahmini değiştir.</div>`;
   let lastDay=0;
   adv.forEach(x=>{
    const k=dayKey(x.m.date);if(k!==lastDay){h+=`<div class="day">${fmtD(x.m.date)}</div>`;lastDay=k}
-   h+=`<div class="cp"><div class="top"><b>${x.lg.flag||''} ${esc(x.m.h.n)} – ${esc(x.m.a.n)}</b><span style="color:var(--mut)">${fmtT(x.m.date)}</span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><span class="ok" style="font-size:15px">${esc(PNAME[x.pk.k])}</span><b style="color:var(--gold)">Oran ${x.pk.real?'':'~'}${f1(x.pk.o)} · %${Math.round(x.pk.p*100)}</b></div><div style="font-size:12px;color:var(--mut);margin-top:3px">${whyText(x)}${x.pk.real?'':' · tahmini oran'}</div></div>`;
+   h+=`<div class="cp" style="cursor:pointer" data-a="advm" data-lg="${esc(x.lg.id)}" data-h="${esc(x.m.h.id)}" data-aw="${esc(x.m.a.id)}" data-id="${esc(x.m.id)}"><div class="top"><b>${x.lg.flag||''} ${esc(x.m.h.n)} – ${esc(x.m.a.n)}</b><span style="color:var(--mut)">${fmtT(x.m.date)}</span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><span class="ok" style="font-size:15px">${esc(PNAME[x.pk.k])}${x.pk.manual?' ✎':''}</span><b style="color:var(--gold)">Oran ${x.pk.real?'':'~'}${f1(x.pk.o)} · %${Math.round(x.pk.p*100)}</b></div><div style="font-size:12px;color:var(--mut);margin-top:3px">${whyText(x)}${x.pk.real?'':' · tahmini oran'}</div></div>`;
   });
  }
  h+=`<div class="day">Tüm maçların analizi (${pool.items.length})</div>`;
@@ -1074,7 +1086,7 @@ function viewAyar(){
  </div>`;
 }
 function h2hHTML(){
- const [lgId,hid,aid]=S.sheet,lg=allLeagues().find(l=>l.id===lgId);if(!lg)return '';
+ const [lgId,hid,aid,mid]=S.sheet,lg=allLeagues().find(l=>l.id===lgId);if(!lg)return '';
  const d=getD(lg),all=Object.values(d.matches),tl=teamList(d);
  const T=id=>tl.find(x=>x.id===id)||{n:id,c:''};
  const A=T(hid),B=T(aid),na=nm(A.n),nb=nm(B.n);
@@ -1090,22 +1102,36 @@ function h2hHTML(){
   }}
  list.sort((x,y)=>x.m.date<y.m.date?1:-1);
  const n=list.length;
- let h=`<div class="in"><h2>${crest(A.c)}${esc(A.n)} – ${esc(B.n)}${crest(B.c)}<span style="flex:1"></span><button class="btn sm" data-a="close">Kapat</button></h2>
- <div class="day">Aralarındaki maçlar</div>`;
+ let h=`<div class="in"><h2>${crest(A.c)}${esc(A.n)} – ${esc(B.n)}${crest(B.c)}<span style="flex:1"></span><button class="btn sm" data-a="close">Kapat</button></h2>`;
+ const m0=mid&&d.matches[mid];
+ if(m0){
+  const mod=leagueModel(d),r=mod&&predict(mod,m0);
+  const cur=(S.adv.ov||{})[lgId+'|'+mid];
+  h+=`<div class="day">Tahmini değiştir</div>`;
+  if(!r)h+=`<div class="msg">Bu maç için yeterli veri yok.</div>`;
+  else{
+   const x={m:m0,lg,r};
+   h+=`<div class="cp"><div class="picks">${ALLP.map(k=>{const o=oddOf(x,k);return `<button class="${cur===k?'on':''}" data-a="advpick" data-v="${esc(k)}" data-lg="${esc(lgId)}" data-id="${esc(mid)}">${esc(PNAME[k])}<br><small>%${Math.round(r.p[k]*100)} · ${o.real?'':'~'}${f1(o.o)}</small></button>`}).join('')}</div>
+   <div class="bot"><button class="btn sm" data-a="advauto" data-lg="${esc(lgId)}" data-id="${esc(mid)}">Otomatik seç</button><button class="btn sm" data-a="advskip" data-lg="${esc(lgId)}" data-id="${esc(mid)}">${cur==='none'?'✓ ':''}Listeden çıkar</button>${cur&&cur!=='none'?'<span>✎</span>':''}</div></div>`;
+  }
+ }
+ const ms=Object.values(d.matches);
+ h+=`<div class="day">Takım istatistikleri</div>`;
+ [[A,hid],[B,aid]].forEach(([t,id])=>{const st=tstats(id,ms);
+  h+=`<div style="margin:6px 0 0;font-weight:700">${esc(t.n)} ${formHTML(st)}</div><div class="kp"><div><b>${st.p}</b><span>Maç</span></div><div><b>${st.w}-${st.d}-${st.l}</b><span>G-B-M</span></div><div><b>${st.gf}:${st.ga}</b><span>Gol</span></div><div><b>${st.pts}</b><span>Puan</span></div></div>`});
+ h+=`<div class="day">Aralarındaki maçlar</div>`;
  if(!n)return h+`<div class="msg">Yüklü sezonlarda bu iki takımın maçı yok.</div><div class="msg">Yalnızca yüklenmiş sezonlar sayılır. Eski sezonları Maçlar sekmesinde sezon menüsünden seçip ↻ ile yükleyebilirsin.</div></div>`;
  const wa=list.filter(x=>x.ga>x.gb).length,wb=list.filter(x=>x.gb>x.ga).length,dr=n-wa-wb;
  const ga=list.reduce((s,x)=>s+x.ga,0),gb=list.reduce((s,x)=>s+x.gb,0);
  const bt=Math.round(100*list.filter(x=>x.ga>0&&x.gb>0).length/n),ov=Math.round(100*list.filter(x=>x.ga+x.gb>2.5).length/n);
  h+=`<div class="kp"><div><b>${wa}</b><span>${esc(A.n)}</span></div><div><b>${dr}</b><span>Beraberlik</span></div><div><b>${wb}</b><span>${esc(B.n)}</span></div><div><b>${n}</b><span>Maç</span></div></div>
  <div class="kp"><div><b>${ga}:${gb}</b><span>Gol</span></div><div><b>${f1((ga+gb)/n)}</b><span>Maç başı gol</span></div><div><b>%${bt}</b><span>Karşılıklı gol %</span></div><div><b>%${ov}</b><span>2.5 üst %</span></div></div>`;
- const ms=Object.values(d.matches);
- h+=`<div style="margin:6px 0">${esc(A.n)}: ${formHTML(tstats(hid,ms))}</div><div style="margin:6px 0">${esc(B.n)}: ${formHTML(tstats(aid,ms))}</div>`;
  h+=list.slice(0,10).map(x=>`<div class="lgh">${new Date(x.m.date).toLocaleDateString(LOC(),{day:'numeric',month:'short',year:'numeric'})}</div>`+rowHTML(x.m,lgId)).join('');
  h+=`<div class="msg">Yalnızca yüklenmiş sezonlar sayılır. Eski sezonları Maçlar sekmesinde sezon menüsünden seçip ↻ ile yükleyebilirsin.</div></div>`;
  return h;
 }
 function sheetHTML(){
- if(S.sheet&&S.sheet.length===3)return h2hHTML();
+ if(S.sheet&&S.sheet.length>=3)return h2hHTML();
  const [lgId,tid]=S.sheet,lg=allLeagues().find(l=>l.id===lgId);if(!lg)return '';
  const d=getD(lg),ms=Object.values(d.matches);
  const t=teamList(d).find(x=>x.id===tid);if(!t)return '';
@@ -1164,7 +1190,11 @@ document.addEventListener('click',async ev=>{
   case 'advlg':{const l=S.adv.lgs||[];S.adv.lgs=l.includes(el.dataset.id)?l.filter(x=>x!==el.dataset.id):l.concat(el.dataset.id);LS.set('adv',S.adv);render();break}
   case 'advkind':{const l=S.adv.kinds||[];S.adv.kinds=l.includes(v)?l.filter(x=>x!==v):l.concat(v);LS.set('adv',S.adv);render();break}
   case 'advshuffle':S.adv.seed=(S.adv.seed||0)+1;LS.set('adv',S.adv);render();break;
-  case 'advreset':S.adv.lgs=[];S.adv.kinds=[];S.adv.seed=0;LS.set('adv',S.adv);render();break;
+  case 'advreset':S.adv.lgs=[];S.adv.kinds=[];S.adv.seed=0;S.adv.ov={};LS.set('adv',S.adv);render();break;
+  case 'advm':S.sheet=[el.dataset.lg,el.dataset.h,el.dataset.aw,el.dataset.id];render();break;
+  case 'advpick':{const o=S.adv.ov||(S.adv.ov={});o[el.dataset.lg+'|'+el.dataset.id]=v;LS.set('adv',S.adv);render();break}
+  case 'advauto':{const o=S.adv.ov||{};delete o[el.dataset.lg+'|'+el.dataset.id];S.adv.ov=o;LS.set('adv',S.adv);render();break}
+  case 'advskip':{const o=S.adv.ov||(S.adv.ov={});o[el.dataset.lg+'|'+el.dataset.id]='none';LS.set('adv',S.adv);S.sheet=null;render();break}
   case 'advadd':{const adv=buildAdvice(analyzePool(S.adv.days));const cp=LS.get('coupon',[]);adv.forEach(x=>{const ix=cp.findIndex(i=>i.lg===x.lg.id&&i.mid===x.m.id);if(ix>=0){cp[ix].pick=x.pk.k;cp[ix].odd=f1(x.pk.o);cp[ix].est=!x.pk.real}else cp.push({lg:x.lg.id,mid:x.m.id,m:x.m,pick:x.pk.k,odd:f1(x.pk.o),est:!x.pk.real})});LS.set('coupon',cp);S.tab='kupon';LS.set('tab','kupon');render();window.scrollTo(0,0);break}
   case 'swap':{const t=S.cmp.a;S.cmp.a=S.cmp.b;S.cmp.b=t;render();break}
   case 'pick':{const cp=LS.get('coupon',[]);cp[+el.dataset.i].pick=v;LS.set('coupon',cp);render();break}
