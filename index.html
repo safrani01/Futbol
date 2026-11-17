@@ -209,6 +209,9 @@ const D={
 'Maç başı gol':['Tore pro Spiel','Goals per match','أهداف لكل مباراة'],
 'Yüklü sezonlarda bu iki takımın maçı yok.':['In den geladenen Saisons gibt es kein Spiel dieser beiden Teams.','No match between these two teams in the loaded seasons.','لا توجد مباراة بين هذين الفريقين في المواسم المحمّلة.'],
 'Yalnızca yüklenmiş sezonlar sayılır. Eski sezonları Maçlar sekmesinde sezon menüsünden seçip ↻ ile yükleyebilirsin.':['Es zählen nur geladene Saisons. Ältere Saisons kannst du im Tab Spiele über das Saisonmenü wählen und mit ↻ laden.','Only loaded seasons are counted. You can pick older seasons from the season menu in the Matches tab and load them with ↻.','تُحتسب المواسم المحمّلة فقط. يمكنك اختيار مواسم أقدم من قائمة المواسم في تبويب المباريات وتحميلها بزر ↻.'],
+'📋 Kuponu kopyala':['📋 Schein kopieren','📋 Copy slip','📋 نسخ القسيمة'],
+'Kupon kopyalandı.':['Schein kopiert.','Slip copied.','تم نسخ القسيمة.'],
+'Kopyalanamadı.':['Kopieren fehlgeschlagen.','Could not copy.','تعذّر النسخ.'],
 'Takım ara…':['Team suchen…','Search team…','ابحث عن فريق…'],
 'Takım seç…':['Team wählen…','Select team…','اختر فريقًا…'],
 'Karşılaştırma için önce lig verisini yükle (↻).':['Lade zuerst die Ligadaten (↻), um zu vergleichen.','Load the league data first (↻) to compare.','حمّل بيانات الدوري أولًا (↻) للمقارنة.'],
@@ -1012,7 +1015,7 @@ function viewKupon(){
  });
  if(cp.length){
   const st=cpStatus(cp),to=totalOdd(cp),stake=+LS.get('stake',10)||0;
-  h+=`<div class="sum"><div><span>Durum</span><b class="${st.cls}">${st.txt}</b></div><div><span>Toplam oran</span><b>${to?f1(to):'— (tüm oranları gir)'}</b></div><div><span>Bahis tutarı</span><input type="number" inputmode="decimal" value="${stake}" data-a="stake" style="width:90px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 8px"></div><div><span>Olası kazanç</span><b>${to?f1(to*stake):'—'}</b></div><div style="gap:8px"><button class="btn gold" data-a="csave" style="flex:1">Kuponu kaydet</button><button class="btn" data-a="cclear">Temizle</button></div></div>`;
+  h+=`<div class="sum"><div><span>Durum</span><b class="${st.cls}">${st.txt}</b></div><div><span>Toplam oran</span><b>${to?f1(to):'— (tüm oranları gir)'}</b></div><div><span>Bahis tutarı</span><input type="number" inputmode="decimal" value="${stake}" data-a="stake" style="width:90px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 8px"></div><div><span>Olası kazanç</span><b>${to?f1(to*stake):'—'}</b></div><div style="gap:8px"><button class="btn gold" data-a="csave" style="flex:1">Kuponu kaydet</button><button class="btn" data-a="cclear">Temizle</button></div><div style="gap:8px"><button class="btn" data-a="ccopy" style="flex:1">📋 Kuponu kopyala</button><button class="btn" data-a="bwin" style="flex:1">bwin.de ↗</button></div></div>`;
  }
  const hs=LS.get('chist',[]);
  if(hs.length){
@@ -1139,6 +1142,14 @@ document.addEventListener('click',async ev=>{
   case 'pick':{const cp=LS.get('coupon',[]);cp[+el.dataset.i].pick=v;LS.set('coupon',cp);render();break}
   case 'rm':{const cp=LS.get('coupon',[]);cp.splice(+el.dataset.i,1);LS.set('coupon',cp);render();break}
   case 'cclear':if(confirm('Kuponu temizle?')){LS.set('coupon',[]);render()}break;
+  case 'ccopy':case 'bwin':{
+   const cp=LS.get('coupon',[]);if(!cp.length)break;
+   const L=cp.map(i=>i.m.h.n+' – '+i.m.a.n+': '+trs(PNAME[i.pick]||i.pick)+(+i.odd>0?' @'+f1(+i.odd):'')).join('\n');
+   const to=totalOdd(cp);const txt=L+(to?'\n'+trs('Toplam oran')+': '+f1(to):'');
+   let ok=false;try{await navigator.clipboard.writeText(txt);ok=true}catch(e){}
+   if(a==='bwin')window.open('https://www.bwin.de/de/sports','_blank','noopener');
+   else alert(ok?'Kupon kopyalandı.':'Kopyalanamadı.');
+   break}
   case 'csave':{const cp=LS.get('coupon',[]);if(!cp.length)break;const hs=LS.get('chist',[]);hs.unshift({t:Date.now(),items:cp});LS.set('chist',hs);LS.set('coupon',[]);render();break}
   case 'chdel':if(confirm('Kayıtlı kuponu sil?')){const hs=LS.get('chist',[]);hs.splice(+el.dataset.i,1);LS.set('chist',hs);render()}break;
   case 'nettest':{
