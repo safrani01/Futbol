@@ -101,6 +101,11 @@ nav button em{position:absolute;top:3px;left:55%;background:var(--loss);color:#f
 .od b{color:var(--gold);font-weight:600}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:s .8s linear infinite;vertical-align:-2px;margin-right:6px}
 @keyframes s{to{transform:rotate(360deg)}}
+select.lsel{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:5px 6px;font-size:13px;max-width:104px}
+html[dir=rtl] .m,html[dir=rtl] table,html[dir=rtl] .kp,html[dir=rtl] nav,html[dir=rtl] .cr .v,html[dir=rtl] .sel,html[dir=rtl] .bars,html[dir=rtl] .rnd{direction:ltr}
+html[dir=rtl] .set ol{padding-left:0;padding-right:20px}
+html[dir=rtl] .cp .top b,html[dir=rtl] .rnd b{unicode-bidi:plaintext}
+html[dir=rtl] .od,html[dir=rtl] .sc small{unicode-bidi:plaintext}
 </style>
 </head>
 <body>
@@ -148,9 +153,239 @@ const LS={
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const fmtD=iso=>new Date(iso).toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'});
-const fmtDs=d=>d.toLocaleDateString('tr-TR',{day:'numeric',month:'short'});
-const fmtT=iso=>new Date(iso).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+const fmtD=iso=>new Date(iso).toLocaleDateString(LOC(),{weekday:'long',day:'numeric',month:'long'});
+const fmtDs=d=>d.toLocaleDateString(LOC(),{day:'numeric',month:'short'});
+const fmtT=iso=>new Date(iso).toLocaleTimeString(LOC(),{hour:'2-digit',minute:'2-digit'});
+/* ====== Dil / Sprache / Language / اللغة ====== */
+const LANGS=[['tr','Türkçe'],['de','Deutsch'],['en','English'],['ar','العربية']];
+let LANG=LS.get('lang','tr');if(!LANGS.some(l=>l[0]===LANG))LANG='tr';
+const LOCS={tr:'tr-TR',de:'de-DE',en:'en-GB',ar:'ar-u-nu-latn'};
+const LOC=()=>LOCS[LANG];
+const LI={de:0,en:1,ar:2};
+const NAVT={hafta:['Woche','Week','الأسبوع'],mac:['Spiele','Matches','المباريات'],puan:['Tabelle','Table','الترتيب'],kiyas:['Vergleich','Compare','قارن'],oner:['Tipps','Tips','نصائح'],kupon:['Schein','Slip','القسيمة'],ayar:['Einstellungen','Settings','الإعدادات']};
+const D={
+/* Genel */
+'Hafta':['Woche','Week','الأسبوع'],
+'Maçlar':['Spiele','Matches','المباريات'],
+'Maç':['Spiele','Played','مباريات'],
+'Puan':['Punkte','Points','النقاط'],
+'Kıyasla':['Vergleichen','Compare','قارن'],
+'Tavsiye':['Tipps','Tips','نصائح'],
+'Kupon':['Schein','Slip','القسيمة'],
+'Ayarlar':['Einstellungen','Settings','الإعدادات'],
+'Futbol Takip':['Fußball-Tracker','Football Tracker','متابعة كرة القدم'],
+'Hepsi':['Alle','All','الكل'],'Biten':['Beendet','Finished','المنتهية'],'Gelecek':['Anstehend','Upcoming','القادمة'],
+'CANLI':['LIVE','LIVE','مباشر'],'Ertelendi':['Verschoben','Postponed','مؤجلة'],
+'Kapat':['Schließen','Close','إغلاق'],'Kaydet':['Speichern','Save','حفظ'],'Sil':['Löschen','Delete','حذف'],'Ekle':['Hinzufügen','Add','إضافة'],'Temizle':['Leeren','Clear','مسح'],'Çıkar':['Entfernen','Remove','إزالة'],'(sil)':['(löschen)','(delete)','(حذف)'],
+'Yükleniyor…':['Lädt…','Loading…','جارٍ التحميل…'],
+'Test ediliyor…':['Wird getestet…','Testing…','جارٍ الاختبار…'],
+'Dakikalık istek sınırı için kısa bekleme…':['Kurze Wartezeit wegen des Minutenlimits…','Short wait for the per-minute request limit…','انتظار قصير بسبب حد الطلبات في الدقيقة…'],
+/* Hafta */
+'↻ Seçili ligleri güncelle':['↻ Ausgewählte Ligen aktualisieren','↻ Update selected leagues','↻ تحديث الدوريات المحددة'],
+'Seçili ligleri güncelle':['Ausgewählte Ligen aktualisieren','Update selected leagues','تحديث الدوريات المحددة'],
+'Bu hafta':['Diese Woche','This week','هذا الأسبوع'],
+"'ye bas. (Süper Lig için ücretsiz kaynakta yalnızca yakın haftalar yüklenir; eski haftalar için Maçlar sekmesinde ‹ › ile gez.)":["drücken. (Für die Süper Lig lädt die kostenlose Quelle nur die letzten Wochen; ältere Wochen findest du im Tab Spiele mit ‹ ›.)","(Hit the button.) (For the Süper Lig the free source only loads recent weeks; browse older weeks in the Matches tab with ‹ ›.)","(اضغط الزر.) (في الدوري التركي تحمّل المصادر المجانية الأسابيع القريبة فقط؛ تصفّح الأسابيع الأقدم من تبويب المباريات بـ ‹ ›.)"],
+'Bu aralıkta yüklü maç yok. Yukarıdan ligleri seçip':['Im gewählten Zeitraum sind keine Spiele geladen. Wähle oben Ligen aus und tippe auf','No matches loaded in this range. Pick leagues above and press','لا توجد مباريات محمّلة في هذه الفترة. اختر الدوريات من الأعلى ثم اضغط'],
+/* Maçlar / puan */
+'Henüz veri yok. Sağ üstteki ↻ ile yükle.':['Noch keine Daten. Oben rechts mit ↻ laden.','No data yet. Load it with ↻ at the top right.','لا توجد بيانات بعد. حمّلها بزر ↻ في أعلى اليمين.'],
+'Puan durumu yok. ↻ ile yükle.':['Keine Tabelle. Mit ↻ laden.','No standings. Load them with ↻.','لا يوجد ترتيب. حمّله بزر ↻.'],
+'(Kupalarda grup/lig aşaması tablosu gelir.)':['(Bei Pokalwettbewerben kommt die Gruppen-/Ligaphasen-Tabelle.)','(For cups the group/league-phase table is shown.)','(في البطولات تظهر جداول مرحلة المجموعات/الدوري.)'],
+'Kaynak puan tablosu vermedi; tablo oynanmış maçlardan hesaplandı.':['Die Quelle lieferte keine Tabelle; sie wurde aus den gespielten Spielen berechnet.','The source gave no table; it was calculated from played matches.','لم يوفّر المصدر جدول الترتيب؛ حُسب الجدول من المباريات التي لُعبت.'],
+'Yüklü gelecek maç yok.':['Keine kommenden Spiele geladen.','No upcoming matches loaded.','لا توجد مباريات قادمة محمّلة.'],
+'Yüklü sonuç yok.':['Keine Ergebnisse geladen.','No results loaded.','لا توجد نتائج محمّلة.'],
+'Sıradaki maçlar':['Nächste Spiele','Next matches','المباريات القادمة'],
+'Son 5 maç':['Letzte 5 Spiele','Last 5 matches','آخر 5 مباريات'],
+'Oynanan maçlar':['Gespielte Spiele','Played matches','المباريات الملعوبة'],
+'Takım':['Team','Team','الفريق'],
+'O':['Sp','P','لعب'],'G':['S','W','ف'],'B':['U','D','ت'],'M':['N','L','خ'],'AV':['TD','GD','فارق'],'P':['P','Pts','ن'],
+'G-B-M':['S-U-N','W-D-L','ف-ت-خ'],'Gol':['Tore','Goals','أهداف'],
+'Bu turda gösterilecek maç yok.':['In dieser Runde gibt es keine Spiele.','No matches in this round.','لا توجد مباريات في هذه الجولة.'],
+'Bu sezon için maç bulunamadı.':['Für diese Saison wurden keine Spiele gefunden.','No matches found for this season.','لم يتم العثور على مباريات لهذا الموسم.'],
+'Bu lig için veri kaynağı bulunamadı':['Für diese Liga wurde keine Datenquelle gefunden','No data source found for this league','لم يتم العثور على مصدر بيانات لهذا الدوري'],
+/* Kıyas */
+'Takım ara…':['Team suchen…','Search team…','ابحث عن فريق…'],
+'Takım seç…':['Team wählen…','Select team…','اختر فريقًا…'],
+'Karşılaştırma için önce lig verisini yükle (↻).':['Lade zuerst die Ligadaten (↻), um zu vergleichen.','Load the league data first (↻) to compare.','حمّل بيانات الدوري أولًا (↻) للمقارنة.'],
+'İki farklı takım seç. Karşılaştırma, yüklenmiş bu sezon maçlarından hesaplanır.':['Wähle zwei verschiedene Teams. Der Vergleich wird aus den geladenen Spielen dieser Saison berechnet.','Pick two different teams. The comparison is calculated from the loaded matches of this season.','اختر فريقين مختلفين. تُحسب المقارنة من مباريات هذا الموسم المحمّلة.'],
+'Oynanan maç':['Gespielte Spiele','Matches played','المباريات الملعوبة'],
+'Galibiyet %':['Siegquote %','Win %','نسبة الفوز %'],
+'Maç başı puan':['Punkte pro Spiel','Points per match','نقاط لكل مباراة'],
+'Maç başı atılan gol':['Erzielte Tore pro Spiel','Goals scored per match','أهداف مسجلة لكل مباراة'],
+'Maç başı yenilen gol':['Gegentore pro Spiel','Goals conceded per match','أهداف مستقبلة لكل مباراة'],
+'Gol yemeden bitirme %':['Zu Null %','Clean sheets %','شباك نظيفة %'],
+'Karşılıklı gol %':['Beide treffen %','Both teams scored %','تسجيل الفريقين %'],
+'2.5 üst %':['Über 2.5 %','Over 2.5 %','أكثر من 2.5 %'],
+'Bu sezon aralarındaki maçlar':['Direkte Duelle in dieser Saison','Head-to-head this season','المواجهات المباشرة هذا الموسم'],
+'Bu sezon yüklenen verilerde aralarında maç yok.':['In den geladenen Daten dieser Saison gibt es kein Spiel zwischen beiden.','No match between them in this season’s loaded data.','لا توجد مباراة بينهما في بيانات هذا الموسم المحمّلة.'],
+'Son 5:':['Letzte 5:','Last 5:','آخر 5:'],
+'Notlar':['Notizen','Notes','ملاحظات'],
+'Durum':['Status','Status','الحالة'],
+'Sıra':['Rang','Rank','الترتيب'],
+/* Tavsiye */
+'Maç sayısı:':['Anzahl Spiele:','Number of matches:','عدد المباريات:'],
+'Güvenli':['Sicher','Safe','آمن'],'Dengeli':['Ausgewogen','Balanced','متوازن'],'Riskli':['Riskant','Risky','مخاطرة'],
+'Min. oran':['Min. Quote','Min. odds','أدنى أودز'],
+'Önerilen kupon':['Empfohlener Schein','Suggested slip','القسيمة المقترحة'],
+'Tüm maçların tutma ihtimali':['Wahrscheinlichkeit, dass alle Tipps treffen','Chance that all picks hit','احتمال نجاح كل الاختيارات'],
+'Toplam oran':['Gesamtquote','Total odds','إجمالي الأودز'],
+'Toplam oran (kısmen tahmini)':['Gesamtquote (teilweise geschätzt)','Total odds (partly estimated)','إجمالي الأودز (جزء منه تقديري)'],
+'En düşük seçim güveni':['Niedrigste Tipp-Sicherheit','Lowest pick confidence','أقل ثقة في الاختيار'],
+'Kupona aktar':['In den Schein übernehmen','Add to slip','نقل إلى القسيمة'],
+'Kupona ekle':['Zum Schein hinzufügen','Add to slip','أضف إلى القسيمة'],
+'↻ Verileri güncelle (analiz için)':['↻ Daten aktualisieren (für die Analyse)','↻ Update data (for analysis)','↻ تحديث البيانات (للتحليل)'],
+'Önümüzdeki günlerin maçlarını, bu sezonun sonuçlarından (son maçlara daha çok ağırlık vererek) Poisson modeliyle analiz eder. Garanti vermez. Oran verisi (Ayarlar\'daki veri botu + oran anahtarı) varsa gerçek oranı, yoksa modelden hesaplanan':['Analysiert die Spiele der kommenden Tage mit einem Poisson-Modell auf Basis der Ergebnisse dieser Saison (jüngere Spiele zählen stärker). Keine Garantie. Liegen Quoten vor (Daten-Bot + Quoten-Schlüssel in den Einstellungen), werden die echten Quoten verwendet, sonst die vom Modell berechnete','Analyses the matches of the coming days with a Poisson model based on this season’s results (recent matches weigh more). No guarantee. If odds data is available (data bot + odds key in Settings) it uses the real odds, otherwise the odds calculated by the model','يحلّل مباريات الأيام القادمة بنموذج بواسون اعتمادًا على نتائج هذا الموسم (مع وزن أكبر للمباريات الأخيرة). لا ضمان. إن توفرت بيانات الأودز (بوت البيانات + مفتاح الأودز في الإعدادات) يستخدم الأودز الحقيقي، وإلا يستخدم الأودز المحسوب من النموذج'],
+'tahmini oranı':['geschätzte Quote','estimated odds','الأودز التقديري'],
+'(~) kullanır; minimum oranın altındaki seçimleri listeye almaz.':['(~); Tipps unter der Mindestquote werden nicht aufgenommen.','(~); picks below the minimum odds are left out.','(~)؛ ولا يُدرج الاختيارات التي أودزها أقل من الحد الأدنى.'],
+'Seçili aralıkta analiz edilebilir maç yok. Gün sayısını artır ya da verileri güncelle. Ligleri Hafta sekmesindeki çiplerden seçebilirsin.':['Im gewählten Zeitraum gibt es keine analysierbaren Spiele. Erhöhe die Tageanzahl oder aktualisiere die Daten. Ligen wählst du über die Chips im Tab Woche.','No analysable matches in the selected range. Increase the number of days or update the data. You can choose leagues with the chips in the Week tab.','لا توجد مباريات قابلة للتحليل في الفترة المحددة. زد عدد الأيام أو حدّث البيانات. يمكنك اختيار الدوريات من الشرائح في تبويب الأسبوع.'],
+'tahmini':['geschätzt','estimated','تقديري'],
+'⚠ 1.25 altı':['⚠ unter 1.25','⚠ below 1.25','⚠ أقل من 1.25'],
+/* Kupon */
+'Kuponu kaydet':['Schein speichern','Save slip','حفظ القسيمة'],
+'Kayıtlı kuponlar':['Gespeicherte Scheine','Saved slips','القسائم المحفوظة'],
+'Oran':['Quote','Odds','الأودز'],'Oranlar':['Quoten','Odds','الأودز'],
+'Bahis tutarı':['Einsatz','Stake','مبلغ الرهان'],'Olası kazanç':['Möglicher Gewinn','Potential win','الربح المحتمل'],
+'Yattı ✗':['Verloren ✗','Lost ✗','خسرت ✗'],'Tuttu ✓':['Gewonnen ✓','Won ✓','ربحت ✓'],
+'Kuponun boş. Maç listelerinde':['Dein Schein ist leer. Tippe in den Spielelisten auf','Your slip is empty. Press','قسيمتك فارغة. اضغط على'],
+'düğmesine basarak maç ekle, sonra buradan tahminini ve oranını gir.':['um Spiele hinzuzufügen, und trage hier Tipp und Quote ein.','in the match lists to add matches, then enter your pick and odds here.','في قوائم المباريات لإضافة مباراة، ثم أدخل توقعك وأودزها هنا.'],
+'Kuponu temizle?':['Schein leeren?','Clear the slip?','هل تريد مسح القسيمة؟'],
+'Kayıtlı kuponu sil?':['Gespeicherten Schein löschen?','Delete the saved slip?','هل تريد حذف القسيمة المحفوظة؟'],
+/* Ayarlar */
+'football-data.org anahtarı':['football-data.org-Schlüssel','football-data.org key','مفتاح football-data.org'],
+'football-data.org/client/register':['football-data.org/client/register','football-data.org/client/register','football-data.org/client/register'],
+'sayfasında ücretsiz kayıt ol.':['– kostenlos registrieren.','– sign up for free.','– سجّل مجانًا.'],
+"E-postana gelen API token'ı kopyala.":['Kopiere den API-Token aus deiner E-Mail.','Copy the API token from your email.','انسخ رمز API الذي وصلك على بريدك.'],
+"Aşağıya yapıştırıp Kaydet'e bas.":['Füge ihn unten ein und tippe auf Speichern.','Paste it below and press Save.','الصقه في الأسفل ثم اضغط حفظ.'],
+"Token'ını yapıştır":['Token einfügen','Paste your token','الصق الرمز هنا'],
+"TheSportsDB anahtarı (boş bırakırsan ücretsiz '3' kullanılır)":["TheSportsDB-Schlüssel (leer = kostenloser Schlüssel '3')","TheSportsDB key (leave empty to use the free key '3')","مفتاح TheSportsDB (إن تركته فارغًا يُستخدم المفتاح المجاني '3')"],
+'Bu lig için football-data.org anahtarı gerekiyor. Ayarlar sekmesinden ücretsiz anahtarını gir (2 dakika sürer).':['Für diese Liga wird ein football-data.org-Schlüssel benötigt. Trage deinen kostenlosen Schlüssel in den Einstellungen ein (dauert 2 Minuten).','This league needs a football-data.org key. Enter your free key in the Settings tab (takes 2 minutes).','يحتاج هذا الدوري إلى مفتاح football-data.org. أدخل مفتاحك المجاني في تبويب الإعدادات (يستغرق دقيقتين).'],
+'Premier Lig, La Liga, Bundesliga, Serie A, Ligue 1, Şampiyonlar Ligi, Dünya Kupası, Avrupa Şampiyonası ve diğerleri bu ücretsiz anahtarla gelir.':['Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Champions League, Weltmeisterschaft, Europameisterschaft und weitere sind mit diesem kostenlosen Schlüssel dabei.','Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Champions League, World Cup, European Championship and more come with this free key.','الدوري الإنجليزي والإسباني والألماني والإيطالي والفرنسي ودوري الأبطال وكأس العالم وأمم أوروبا وغيرها تأتي مع هذا المفتاح المجاني.'],
+'Süper Lig anahtarsız çalışır.':['Die Süper Lig funktioniert ohne Schlüssel.','The Süper Lig works without a key.','الدوري التركي يعمل بدون مفتاح.'],
+'API Token':['API-Token','API Token','رمز API'],
+'Ek lig ekle (TheSportsDB ID)':['Weitere Liga hinzufügen (TheSportsDB-ID)','Add another league (TheSportsDB ID)','إضافة دوري آخر (معرّف TheSportsDB)'],
+'Lig adı (örn. 1. Lig)':['Liganame (z. B. 2. Liga)','League name (e.g. 1. Lig)','اسم الدوري (مثال: 1. Lig)'],
+'Lig ID (örn. 4338)':['Liga-ID (z. B. 4338)','League ID (e.g. 4338)','معرّف الدوري (مثال: 4338)'],
+'Eklenenler:':['Hinzugefügt:','Added:','المضافة:'],
+'Veri kaynağı':['Datenquelle','Data source','مصدر البيانات'],
+'Sıra: repodaki':['Reihenfolge: die Dateien im Repo-Ordner','Order: the files in the repo folder','الترتيب: ملفات مجلد المستودع'],
+'data/':['data/','data/','data/'],
+'dosyaları (GitHub veri botu) → resmî API → ESPN. Hangisi çalışırsa onu kullanır; üstteki başlıkta hangi kaynaktan geldiği yazar.':['(GitHub-Daten-Bot) → offizielle API → ESPN. Es wird die erste funktionierende Quelle genutzt; in der Kopfzeile oben steht, woher die Daten stammen.','(GitHub data bot) → official API → ESPN. The first one that works is used; the header at the top shows which source the data came from.','(بوت بيانات GitHub) ← الـ API الرسمي ← ESPN. يُستخدم أول مصدر يعمل؛ ويظهر في العنوان بالأعلى مصدر البيانات.'],
+"Resmî API yerine önce ESPN'i dene":['Statt der offiziellen API zuerst ESPN versuchen','Try ESPN before the official API','جرّب ESPN قبل الـ API الرسمي'],
+'Bağlantıyı test et':['Verbindung testen','Test connection','اختبار الاتصال'],
+'Önbelleği temizle':['Cache leeren','Clear cache','مسح الذاكرة المؤقتة'],
+'Oranlar repodaki':['Die Quoten werden aus der Datei','Odds are read from the file','تُقرأ الأودز من الملف'],
+'data/odds.json':['data/odds.json','data/odds.json','data/odds.json'],
+'dosyasından okunur. Bu dosyayı veri botu':['im Repo gelesen. Diese Datei erstellt der Daten-Bot','in the repo. This file is produced by the data bot','في المستودع. ينتج هذا الملف بوت البيانات'],
+'the-odds-api.com':['the-odds-api.com','the-odds-api.com','the-odds-api.com'],
+"ücretsiz anahtarıyla üretir (GitHub'da":['mit einem kostenlosen Schlüssel (in GitHub wird das Secret','using a free key (in GitHub the secret','بمفتاح مجاني (في GitHub يُضاف السر'],
+'ODDS_API_KEY':['ODDS_API_KEY','ODDS_API_KEY','ODDS_API_KEY'],
+'Veriler football-data.org ve TheSportsDB\'den çekilir (Flashscore\'un resmî ücretsiz API\'si yoktur). Ücretsiz pakette skorlar birkaç dakika gecikebilir; canlı dakika/istatistik gösterilmez. Tüm maç, kupon ve ayarlar yalnızca bu cihazda saklanır.':['Die Daten stammen von football-data.org und TheSportsDB (Flashscore hat keine offizielle kostenlose API). Im kostenlosen Paket können Ergebnisse einige Minuten verzögert sein; Live-Minuten/Statistiken werden nicht angezeigt. Alle Spiele, Scheine und Einstellungen werden nur auf diesem Gerät gespeichert.','Data comes from football-data.org and TheSportsDB (Flashscore has no official free API). On the free plan scores can be a few minutes late; live minutes/statistics are not shown. All matches, slips and settings are stored only on this device.','تُجلب البيانات من football-data.org وTheSportsDB (ليس لدى Flashscore واجهة API مجانية رسمية). في الباقة المجانية قد تتأخر النتائج بضع دقائق؛ ولا تُعرض الدقائق المباشرة ولا الإحصاءات. تُحفظ كل المباريات والقسائم والإعدادات على هذا الجهاز فقط.'],
+'Veri dosyası':['Datendatei','Data file','ملف البيانات'],
+'Veri dosyası (data/ klasörü)':['Datendatei (Ordner data/)','Data file (data/ folder)','ملف البيانات (مجلد data/)'],
+'Genel internet (api.github.com)':['Allgemeines Internet (api.github.com)','General internet (api.github.com)','الإنترنت العام (api.github.com)'],
+'Ağ erişimi (CORS hariç) · ESPN':['Netzzugriff (ohne CORS) · ESPN','Network access (excl. CORS) · ESPN','الوصول للشبكة (دون CORS) · ESPN'],
+'ESPN (anahtarsız, resmî değil)':['ESPN (ohne Schlüssel, inoffiziell)','ESPN (no key, unofficial)','ESPN (بدون مفتاح، غير رسمي)'],
+'Kaydedildi. Maçlar sekmesinden ↻ ile veriyi yükleyebilirsin.':['Gespeichert. Im Tab Spiele kannst du die Daten mit ↻ laden.','Saved. You can load the data with ↻ in the Matches tab.','تم الحفظ. يمكنك تحميل البيانات بزر ↻ من تبويب المباريات.'],
+'Ad ve sayısal ID gir.':['Gib Namen und numerische ID ein.','Enter a name and a numeric ID.','أدخل اسمًا ومعرّفًا رقميًا.'],
+'Yüklenen maç verileri silinsin? (Kuponların ve ayarların silinmez)':['Geladene Spieldaten löschen? (Scheine und Einstellungen bleiben erhalten)','Delete the loaded match data? (Slips and settings are kept)','هل تريد حذف بيانات المباريات المحمّلة؟ (القسائم والإعدادات لا تُحذف)'],
+/* Hata metinleri */
+'Anahtar geçersiz görünüyor. Ayarlar sekmesinden kontrol et.':['Der Schlüssel scheint ungültig zu sein. Prüfe ihn in den Einstellungen.','The key looks invalid. Check it in the Settings tab.','يبدو أن المفتاح غير صالح. تحقّق منه في تبويب الإعدادات.'],
+'Bu lig/sezon ücretsiz pakette yok (403).':['Diese Liga/Saison ist im kostenlosen Paket nicht enthalten (403).','This league/season is not in the free plan (403).','هذا الدوري/الموسم غير متاح في الباقة المجانية (403).'],
+'Çok sık istek yapıldı (ücretsiz pakette dakikada 10). Bir dakika bekleyip ↻ ile tekrar dene.':['Zu viele Anfragen (kostenlos: 10 pro Minute). Warte eine Minute und versuche es mit ↻ erneut.','Too many requests (free plan: 10 per minute). Wait a minute and try ↻ again.','طلبات كثيرة جدًا (الباقة المجانية: 10 في الدقيقة). انتظر دقيقة ثم أعد المحاولة بزر ↻.'],
+'Sunucudan 20 saniyede yanıt gelmedi. Dosyayı Claude içindeki önizlemede değil, telefonun/bilgisayarın tarayıcısında (Chrome, Safari) aç; Ayarlar → Bağlantıyı test et ile kontrol et.':['Der Server hat innerhalb von 20 Sekunden nicht geantwortet. Öffne die Datei nicht in der Claude-Vorschau, sondern im Browser (Chrome, Safari); prüfe mit Einstellungen → Verbindung testen.','The server did not respond within 20 seconds. Open the file in your phone/computer browser (Chrome, Safari), not in a preview inside Claude; check with Settings → Test connection.','لم يستجب الخادم خلال 20 ثانية. افتح الملف في متصفح الهاتف/الحاسوب (Chrome أو Safari) وليس في المعاينة داخل Claude؛ وتحقّق عبر الإعدادات ← اختبار الاتصال.'],
+'Bağlantı kurulamadı (internet yok ya da uygulama dış siteye erişimi engelleyen bir önizlemede açık). Dosyayı tarayıcıda aç ve Ayarlar → Bağlantıyı test et ile kontrol et.':['Keine Verbindung (kein Internet oder die App läuft in einer Vorschau, die externe Seiten blockiert). Öffne die Datei im Browser und prüfe mit Einstellungen → Verbindung testen.','Could not connect (no internet, or the app is open in a preview that blocks external sites). Open the file in a browser and check with Settings → Test connection.','تعذّر الاتصال (لا يوجد إنترنت أو أن التطبيق مفتوح في معاينة تمنع الوصول للمواقع الخارجية). افتح الملف في المتصفح وتحقّق عبر الإعدادات ← اختبار الاتصال.'],
+/* Pick adları */
+'MS 1':['Ergebnis 1','Result 1','النتيجة 1'],'MS X':['Ergebnis X','Result X','النتيجة X'],'MS 2':['Ergebnis 2','Result 2','النتيجة 2'],
+'Ü1.5':['Ü1.5','O1.5','فوق 1.5'],'Ü2.5':['Ü2.5','O2.5','فوق 2.5'],'A2.5':['U2.5','U2.5','تحت 2.5'],'A3.5':['U3.5','U3.5','تحت 3.5'],
+'KG+':['BTTS+','BTTS+','يسجلان+'],'KG-':['BTTS-','BTTS-','يسجلان-'],
+'KG Var':['Beide treffen','BTTS Yes','يسجل الطرفان'],'KG Yok':['Nicht beide','BTTS No','لا يسجل الطرفان'],
+'1.5 Üst':['Über 1.5','Over 1.5','أكثر من 1.5'],'2.5 Üst':['Über 2.5','Over 2.5','أكثر من 2.5'],'2.5 Alt':['Unter 2.5','Under 2.5','أقل من 2.5'],'3.5 Alt':['Unter 3.5','Under 3.5','أقل من 3.5'],
+'Çifte Şans 1X':['Doppelte Chance 1X','Double Chance 1X','فرصة مزدوجة 1X'],'Çifte Şans X2':['Doppelte Chance X2','Double Chance X2','فرصة مزدوجة X2'],'Çifte Şans 12':['Doppelte Chance 12','Double Chance 12','فرصة مزدوجة 12'],
+/* Aşamalar */
+'Grup Aşaması':['Gruppenphase','Group stage','دور المجموعات'],'Lig Aşaması':['Ligaphase','League phase','مرحلة الدوري'],'Play-off':['Play-off','Play-offs','الملحق'],
+'Son 16':['Achtelfinale','Round of 16','دور الـ16'],'Son 32':['Sechzehntelfinale','Round of 32','دور الـ32'],'Çeyrek Final':['Viertelfinale','Quarter-final','ربع النهائي'],'Yarı Final':['Halbfinale','Semi-final','نصف النهائي'],'3.lük Maçı':['Spiel um Platz 3','Third-place match','مباراة المركز الثالث'],'Final':['Finale','Final','النهائي'],
+/* Ağ testi */
+'(veri botu kurulu değil)':['(Daten-Bot nicht eingerichtet)','(data bot not set up)','(بوت البيانات غير مُعدّ)'],
+'ağ var; ESPN CORS testi aşağıda':['Netz vorhanden; ESPN-CORS-Test unten','network OK; ESPN CORS test below','الشبكة متاحة؛ اختبار CORS لـ ESPN أدناه'],
+};
+/* Lig adları */
+const LGN={'Süper Lig':['Süper Lig','Süper Lig','الدوري التركي'],'Premier Lig':['Premier League','Premier League','الدوري الإنجليزي'],'La Liga':['La Liga','La Liga','الدوري الإسباني'],'Bundesliga':['Bundesliga','Bundesliga','الدوري الألماني'],'Serie A':['Serie A','Serie A','الدوري الإيطالي'],'Ligue 1':['Ligue 1','Ligue 1','الدوري الفرنسي'],'Şampiyonlar Ligi':['Champions League','Champions League','دوري أبطال أوروبا'],'Avrupa Ligi':['Europa League','Europa League','الدوري الأوروبي'],'Dünya Kupası':['Weltmeisterschaft','World Cup','كأس العالم'],'Avrupa Şampiyonası':['Europameisterschaft','European Championship','أمم أوروبا'],'Eredivisie':['Eredivisie','Eredivisie','الدوري الهولندي'],'Primeira Liga':['Primeira Liga','Primeira Liga','الدوري البرتغالي'],'Championship':['Championship','Championship','التشامبيونشيب'],'Brasileirão':['Brasileirão','Brasileirão','الدوري البرازيلي']};
+for(const k in LGN){D[k]=LGN[k];const f=(LEAGUES.find(l=>l.name===k)||{}).flag;if(f)D[f+' '+k]=LGN[k].map(x=>f+' '+x)}
+/* Biçimli (dinamik) metinler */
+const RX=[
+[/^Kuponum \((\d+) maç\)$/,['Mein Schein ($1 Spiele)','My slip ($1 matches)','قسيمتي ($1 مباراة)']],
+[/^Oran (~?[\d.]+) · %(\d+)$/,['Quote $1 · %$2','Odds $1 · %$2','الأودز $1 · %$2']],
+[/^Tüm maçların analizi \((\d+)\)$/,['Analyse aller Spiele ($1)','Analysis of all matches ($1)','تحليل كل المباريات ($1)']],
+[/^Gelecek \/ oynanmamış \((\d+)\)$/,['Anstehend / ungespielt ($1)','Upcoming / unplayed ($1)','القادمة / غير الملعوبة ($1)']],
+[/^Oynananlar \((\d+)\)$/,['Gespielt ($1)','Played ($1)','الملعوبة ($1)']],
+[/^(\d+) gün$/,['$1 Tage','$1 days','$1 أيام']],
+[/^(\d+) maç$/,['$1 Spiele','$1 matches','$1 مباراة']],
+[/^(.+) · Bu hafta$/,['$1 · Diese Woche','$1 · This week','$1 · هذا الأسبوع']],
+[/^(.+) · (\d+) maç · ([\d.]+) oran$/,['$1 · $2 Spiele · Quote $3','$1 · $2 matches · odds $3','$1 · $2 مباراة · أودز $3']],
+[/^(.+) · (\d+) maç$/,['$1 · $2 Spiele','$1 · $2 matches','$1 · $2 مباراة']],
+[/^(\d+)\. Hafta$/,['$1. Spieltag','Week $1','الأسبوع $1']],
+[/^(\d+)\. Maç Günü$/,['$1. Spieltag','Matchday $1','الجولة $1']],
+[/^(\d+)\. hafta yükleniyor…$/,['$1. Woche wird geladen…','Loading week $1…','جارٍ تحميل الأسبوع $1…']],
+[/^(.+) · (\d+)\. hafta yükleniyor…$/,['$1 · $2. Woche wird geladen…','$1 · loading week $2…','$1 · جارٍ تحميل الأسبوع $2…']],
+[/^(.+) yükleniyor…$/,['$1 wird geladen…','Loading $1…','جارٍ تحميل $1…']],
+[/^Bekliyor \((\d+)\/(\d+) tuttu\)$/,['Offen ($1/$2 getroffen)','Pending ($1/$2 hit)','قيد الانتظار ($1/$2 صحيحة)']],
+[/^Beklenen skor (.+) · 1\/X\/2: (\S+) · (tahmini oran)$/,['Erwartetes Ergebnis $1 · 1/X/2: $2 · $3','Expected score $1 · 1/X/2: $2 · $3','النتيجة المتوقعة $1 · 1/X/2: $2 · $3']],
+[/^Beklenen skor (.+) · 1\/X\/2: (\S+)$/,['Erwartetes Ergebnis $1 · 1/X/2: $2','Expected score $1 · 1/X/2: $2','النتيجة المتوقعة $1 · 1/X/2: $2']],
+[/^Son 5 maçta (.+)$/,['Letzte 5 Spiele: $1','Last 5 matches: $1','آخر 5 مباريات: $1']],
+[/^(.+) iç saha \(puan\/maç\) vs (.+) deplasman$/,['$1 zu Hause (Punkte/Spiel) vs $2 auswärts','$1 at home (points/match) vs $2 away','$1 على أرضه (نقاط/مباراة) مقابل $2 خارج أرضه']],
+[/^İstenen (\d+) maç için yeterli güvenilir seçim bulunamadı\.$/,['Für die gewünschten $1 Spiele wurden nicht genug verlässliche Tipps gefunden.','Not enough reliable picks found for the requested $1 matches.','لم يتم العثور على اختيارات موثوقة كافية للمباريات المطلوبة ($1).']],
+[/^Veri yok\/yetersiz: (.*)\. Güncelle düğmesine bas \(football-data\.org anahtarın Ayarlar'da olmalı\)\.$/,['Keine/zu wenige Daten: $1. Tippe auf Aktualisieren (der football-data.org-Schlüssel muss in den Einstellungen stehen).','No/insufficient data: $1. Press Update (your football-data.org key must be set in Settings).','لا توجد بيانات/غير كافية: $1. اضغط تحديث (يجب إدخال مفتاح football-data.org في الإعدادات).']],
+[/^Bu modda ve ([\d.]+) minimum oranla listeye girecek seçim yok\. Modu "Dengeli" veya "Riskli" yapmayı ya da gün sayısını artırmayı dene\.$/,['In diesem Modus und mit Mindestquote $1 gibt es keinen passenden Tipp. Versuche den Modus „Ausgewogen“ oder „Riskant“ oder erhöhe die Tageanzahl.','No pick qualifies in this mode with minimum odds $1. Try the "Balanced" or "Risky" mode, or increase the number of days.','لا يوجد اختيار مناسب في هذا الوضع مع أدنى أودز $1. جرّب وضع "متوازن" أو "مخاطرة" أو زد عدد الأيام.']],
+[/^adıyla gizli anahtar eklenir\)\. Dosya yoksa oranlar modelden tahmin edilir ve ~ işaretiyle gösterilir\.(?: Son oran verisi: (.*))?$/,['hinzugefügt). Ohne Datei werden die Quoten vom Modell geschätzt und mit ~ markiert.#$1','is added). Without the file, odds are estimated by the model and marked with ~.#$1','). بدون الملف تُقدَّر الأودز بالنموذج وتُعرض بعلامة ~.#$1']],
+[/^Veri dosyası · (.*)$/,['Datendatei · $1','Data file · $1','ملف البيانات · $1']],
+[/^Hata: (.*)$/,['Fehler: $1','Error: $1','خطأ: $1']],
+[/^puan topladı\. Sezon puan ortalaması: (.*)\.$/,['Punkte. Saisonschnitt: $1.','points. Season points per match: $1.','نقطة. متوسط نقاط الموسم: $1.']],
+];
+/* Metin içi parça çevirileri (ağ testi çıktısı vb.) */
+const TOK=[
+[/Çifte Şans/g,['Doppelte Chance','Double Chance','فرصة مزدوجة']],
+[/KG Var/g,D['KG Var']],[/KG Yok/g,D['KG Yok']],
+[/(\d\.\d) Üst/g,['Über $1','Over $1','أكثر من $1']],[/(\d\.\d) Alt/g,['Unter $1','Under $1','أقل من $1']],
+[/(^|[^\wÇĞİÖŞÜçğıöşü])Ü(\d\.\d)/g,['$1Ü$2','$1O$2','$1فوق $2']],[/(^|[^\wÇĞİÖŞÜçğıöşü])A(\d\.\d)/g,['$1U$2','$1U$2','$1تحت $2']],
+[/ maç bulundu/g,[' Spiele gefunden',' matches found',' مباراة وُجدت']],
+[/çevrimiçi:/g,['online:','online:','متصل:']],[/Adres:/g,['Adresse:','Address:','العنوان:']],[/\(dosya\)/g,['(Datei)','(file)','(ملف)']],
+[/son güncelleme:/g,['letzte Aktualisierung:','last update:','آخر تحديث:']],
+[/ağ var; ESPN CORS testi aşağıda/g,D['ağ var; ESPN CORS testi aşağıda']],
+[/\(veri botu kurulu değil\)/g,D['(veri botu kurulu değil)']],
+[/Genel internet \(api\.github\.com\)/g,D['Genel internet (api.github.com)']],
+[/Veri dosyası \(data\/ klasörü\)/g,D['Veri dosyası (data/ klasörü)']],
+[/Ağ erişimi \(CORS hariç\) · ESPN/g,D['Ağ erişimi (CORS hariç) · ESPN']],
+[/ESPN \(anahtarsız, resmî değil\)/g,D['ESPN (anahtarsız, resmî değil)']],
+[/Test ediliyor…/g,D['Test ediliyor…']],
+];
+const tcache={};
+function sub(t,i,mm){return t[i].replace(/\$(\d)/g,(_,n)=>mm[n]==null?'':trs(mm[n]))}
+function tr1(c){
+ const i=LI[LANG],e=D[c];if(e)return e[i];
+ for(const [re,t] of RX){if(!t)continue;const mm=c.match(re);if(mm){let r=sub(t,i,mm);if(r.indexOf('#')>=0){const p=r.split('#');r=p[0]+(p[1]?' '+(LANG==='de'?'Letzte Quoten-Daten: ':LANG==='en'?'Latest odds data: ':'آخر بيانات الأودز: ')+p[1]:'')}return r}}
+ let r=c;for(const [re,t] of TOK)r=r.replace(re,t[i]);
+ return r;
+}
+function trs(s){
+ if(LANG==='tr'||!s||typeof s!=='string')return s;
+ const m=s.match(/^(\s*)([\s\S]*?)(\s*)$/),core=m[2];if(!core)return s;
+ const k=LANG+'|'+core;let r=tcache[k];if(r===undefined){r=tr1(core);tcache[k]=r}
+ return m[1]+r+m[3];
+}
+function trTree(root){
+ if(LANG==='tr'||!root)return;
+ const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null);let n;const arr=[];
+ while((n=w.nextNode())){const p=n.parentNode&&n.parentNode.nodeName;if(p==='SCRIPT'||p==='STYLE')continue;arr.push(n)}
+ arr.forEach(n=>{const t=trs(n.nodeValue);if(t!==n.nodeValue)n.nodeValue=t});
+ root.querySelectorAll('[placeholder],[title]').forEach(el=>{['placeholder','title'].forEach(a=>{const v=el.getAttribute(a);if(v){const t=trs(v);if(t!==v)el.setAttribute(a,t)}})});
+}
+function applyLang(){
+ const h=document.documentElement;h.lang=LANG;h.dir=LANG==='ar'?'rtl':'ltr';
+ trTree(document.querySelector('#app'));trTree(document.querySelector('#sheet'));
+}
+function setLang(l){if(!LANGS.some(x=>x[0]===l))return;LANG=l;LS.set('lang',l);render()}
+const _alert=window.alert.bind(window),_confirm=window.confirm.bind(window);
+window.alert=m=>_alert(trs(m));window.confirm=m=>_confirm(trs(m));
+
 const dayKey=iso=>{const d=new Date(iso);return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate()};
 const f1=(n,d=2)=>isFinite(n)?(+n).toFixed(d):'-';
 
@@ -778,7 +1013,7 @@ function viewKupon(){
   h+=`<div class="day">Kayıtlı kuponlar</div>`;
   hs.forEach((c,ix)=>{
    const st=cpStatus(c.items),to=totalOdd(c.items);
-   h+=`<div class="cp"><div class="top"><b>${new Date(c.t).toLocaleDateString('tr-TR',{day:'numeric',month:'short'})} · ${c.items.length} maç${to?' · '+f1(to)+' oran':''}</b><span class="${st.cls}">${st.txt}</span></div>`+c.items.map(i=>{const r=evalPick(i.pick,i.m);return `<div style="font-size:13px;margin-top:5px;color:var(--mut)">${esc(i.m.h.n)} – ${esc(i.m.a.n)} · <b style="color:var(--tx)">${esc(i.pick)}</b> ${i.m.status==='FINISHED'?`<span class="${r?'ok':'no'}">${i.m.hg}-${i.m.ag} ${r?'✓':'✗'}</span>`:''}</div>`}).join('')+`<div class="bot" style="margin-top:8px"><span style="flex:1"></span><button class="btn sm" data-a="chdel" data-i="${ix}">Sil</button></div></div>`;
+   h+=`<div class="cp"><div class="top"><b>${new Date(c.t).toLocaleDateString(LOC(),{day:'numeric',month:'short'})} · ${c.items.length} maç${to?' · '+f1(to)+' oran':''}</b><span class="${st.cls}">${st.txt}</span></div>`+c.items.map(i=>{const r=evalPick(i.pick,i.m);return `<div style="font-size:13px;margin-top:5px;color:var(--mut)">${esc(i.m.h.n)} – ${esc(i.m.a.n)} · <b style="color:var(--tx)">${esc(i.pick)}</b> ${i.m.status==='FINISHED'?`<span class="${r?'ok':'no'}">${i.m.hg}-${i.m.ag} ${r?'✓':'✗'}</span>`:''}</div>`}).join('')+`<div class="bot" style="margin-top:8px"><span style="flex:1"></span><button class="btn sm" data-a="chdel" data-i="${ix}">Sil</button></div></div>`;
   });
  }
  return h;
@@ -800,7 +1035,7 @@ function viewAyar(){
  <div class="msg" style="margin-top:0">Sıra: repodaki <b>data/</b> dosyaları (GitHub veri botu) → resmî API → ESPN. Hangisi çalışırsa onu kullanır; üstteki başlıkta hangi kaynaktan geldiği yazar.</div>
  <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" data-a="espfirst" ${LS.get('espfirst',false)?'checked':''} style="width:auto"> Resmî API yerine önce ESPN'i dene</label>
  <div class="day">Oranlar</div>
- <div class="msg" style="margin-top:0">Oranlar repodaki <b>data/odds.json</b> dosyasından okunur. Bu dosyayı veri botu <b>the-odds-api.com</b> ücretsiz anahtarıyla üretir (GitHub'da <code>ODDS_API_KEY</code> adıyla gizli anahtar eklenir). Dosya yoksa oranlar modelden tahmin edilir ve ~ işaretiyle gösterilir. ${S.oddsT?'Son oran verisi: '+new Date(S.oddsT).toLocaleString('tr-TR'):''}</div>
+ <div class="msg" style="margin-top:0">Oranlar repodaki <b>data/odds.json</b> dosyasından okunur. Bu dosyayı veri botu <b>the-odds-api.com</b> ücretsiz anahtarıyla üretir (GitHub'da <code>ODDS_API_KEY</code> adıyla gizli anahtar eklenir). Dosya yoksa oranlar modelden tahmin edilir ve ~ işaretiyle gösterilir. ${S.oddsT?'Son oran verisi: '+new Date(S.oddsT).toLocaleString(LOC()):''}</div>
  <div class="day">Notlar</div>
  <div class="msg">Veriler football-data.org ve TheSportsDB'den çekilir (Flashscore'un resmî ücretsiz API'si yoktur). Ücretsiz pakette skorlar birkaç dakika gecikebilir; canlı dakika/istatistik gösterilmez. Tüm maç, kupon ve ayarlar yalnızca bu cihazda saklanır.</div>
  </div>`;
@@ -822,13 +1057,14 @@ function render(){
  const tabs=[['hafta','📅','Hafta'],['mac','⚽','Maçlar'],['puan','🏆','Puan'],['kiyas','⚖️','Kıyasla'],['oner','🎯','Tavsiye'],['kupon','🎟️','Kupon'],['ayar','⚙️','Ayarlar']];
  const cpn=LS.get('coupon',[]).length;
  const lg=curLg(),d=S.data[dkey(lg,getSeason(lg))];
- const upd=d&&d.t?(SRCN[d.via||lg.src]||'')+' · '+new Date(d.dataT||d.t).toLocaleString('tr-TR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
+ const upd=d&&d.t?(SRCN[d.via||lg.src]||'')+' · '+new Date(d.dataT||d.t).toLocaleString(LOC(),{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
  const view={hafta:viewHafta,mac:viewMac,puan:viewPuan,kiyas:viewKiyas,oner:viewOner,kupon:viewKupon,ayar:viewAyar}[S.tab]();
  const keepQ=document.activeElement&&document.activeElement.id==='q';
- $('#app').innerHTML=`<header><h1 style="display:flex;align-items:center;gap:8px">${LOGO} Futbol Takip</h1><small>${S.tab==='hafta'?'':upd}</small>${['mac','puan','kiyas'].includes(S.tab)?'<button class="btn sm" data-a="refresh">↻</button>':''}</header>${view}<nav>${tabs.map(([k,i,l])=>`<button class="${S.tab===k?'on':''}" data-a="tab" data-v="${k}"><i>${i}</i>${l}${k==='kupon'&&cpn?`<em>${cpn}</em>`:''}</button>`).join('')}</nav>`;
+ $('#app').innerHTML=`<header><h1 style="display:flex;align-items:center;gap:8px">${LOGO} Futbol Takip</h1><small>${S.tab==='hafta'?'':upd}</small><select class="lsel" data-a="lang" aria-label="Language">${LANGS.map(([c,n])=>`<option value="${c}"${c===LANG?' selected':''}>${n}</option>`).join('')}</select>${['mac','puan','kiyas'].includes(S.tab)?'<button class="btn sm" data-a="refresh">↻</button>':''}</header>${view}<nav>${tabs.map(([k,i,l])=>`<button class="${S.tab===k?'on':''}" data-a="tab" data-v="${k}"><i>${i}</i>${LANG==='tr'?l:NAVT[k][LI[LANG]]}${k==='kupon'&&cpn?`<em>${cpn}</em>`:''}</button>`).join('')}</nav>`;
  if(keepQ){const q=$('#q');if(q){q.focus();q.setSelectionRange(q.value.length,q.value.length)}}
  const sh=$('#sheet');
  if(S.sheet){sh.innerHTML=sheetHTML();sh.classList.add('show')}else{sh.classList.remove('show');sh.innerHTML=''}
+ applyLang();
 }
 
 /* ====== Olaylar ====== */
@@ -867,9 +1103,9 @@ document.addEventListener('click',async ev=>{
   case 'csave':{const cp=LS.get('coupon',[]);if(!cp.length)break;const hs=LS.get('chist',[]);hs.unshift({t:Date.now(),items:cp});LS.set('chist',hs);LS.set('coupon',[]);render();break}
   case 'chdel':if(confirm('Kayıtlı kuponu sil?')){const hs=LS.get('chist',[]);hs.splice(+el.dataset.i,1);LS.set('chist',hs);render()}break;
   case 'nettest':{
-   const box=$('#nt');box.style.display='block';box.textContent='Test ediliyor…';
+   const box=$('#nt');box.style.display='block';box.textContent=trs('Test ediliyor…');
    const out=['Adres: '+location.protocol+'//'+(location.host||'(dosya)')+' · çevrimiçi: '+navigator.onLine];
-   const t=async(name,fn)=>{const t0=Date.now();try{const j=await fn();out.push('✓ '+name+' ('+(Date.now()-t0)+' ms)'+(j?' · '+j:''))}catch(e){out.push('✗ '+name+': '+(e.status||e.name||'')+' '+(e.message||''))}box.textContent=out.join('\n')};
+   const t=async(name,fn)=>{const t0=Date.now();try{const j=await fn();out.push('✓ '+name+' ('+(Date.now()-t0)+' ms)'+(j?' · '+j:''))}catch(e){out.push('✗ '+name+': '+(e.status||e.name||'')+' '+(e.message||''))}box.textContent=trs(out.join('\n'))};
    await t('Genel internet (api.github.com)',async()=>{const r=await fetch('https://api.github.com/zen');if(!r.ok)throw new Error('HTTP '+r.status);return ''});
    await t('Veri dosyası (data/ klasörü)',async()=>{const r=await fetch('data/index.json?v='+Date.now());if(!r.ok)throw new Error('HTTP '+r.status+' (veri botu kurulu değil)');const j=await r.json();return 'son güncelleme: '+j.t});
    await t('Ağ erişimi (CORS hariç) · ESPN',async()=>{await fetch('https://site.api.espn.com/apis/site/v2/sports/soccer/tur.1/scoreboard',{mode:'no-cors'});return 'ağ var; ESPN CORS testi aşağıda'});
@@ -892,6 +1128,7 @@ document.addEventListener('change',ev=>{
  else if(a==='advmin'){S.adv.minOdd=Math.max(1,+el.value||1.25);LS.set('adv',S.adv);render()}
  else if(a==='stake'){LS.set('stake',+el.value||0);render()}
  else if(a==='espfirst'){LS.set('espfirst',el.checked)}
+ else if(a==='lang'){setLang(el.value)}
  else if(a==='advn'){S.adv.n=+el.value;LS.set('adv',S.adv);render()}
  else if(a==='advmode'){S.adv.mode=el.value;LS.set('adv',S.adv);render()}
  else if(a==='advdays'){S.adv.days=+el.value;LS.set('adv',S.adv);render()}
