@@ -645,7 +645,7 @@ function computeTable(d){
 }
 function chainFor(lg){
  const c=['DATA'];
- if(LS.get('espfirst',false)&&lg.es){c.push('ES',lg.src)}else{c.push(lg.src);if(lg.es)c.push('ES')}
+ if((LS.get('espfirst',false)||lg.src==='TS')&&lg.es){c.push('ES',lg.src)}else{c.push(lg.src);if(lg.es)c.push('ES')}
  return c;
 }
 async function loadLeague(lg,force,light,deep){
