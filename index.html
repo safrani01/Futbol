@@ -549,7 +549,9 @@ async function loadNative(lg,force,light,deep){
    }
   }
   saveSnap(lg);
-  if(!light){try{d.table=nTabTS(await ts(`lookuptable.php?l=${lg.code}&s=${seasonStr(lg,y)}`));saveSnap(lg)}catch(e){}}
+  if(!light){try{d.table=nTabTS(await ts(`lookuptable.php?l=${lg.code}&s=${seasonStr(lg,y)}`));saveSnap(lg)}catch(e){}
+   const cnt=t=>(t||[]).reduce((s,g)=>s+((g&&g.rows)?g.rows.length:1),0);
+   if(lg.es&&cnt(d.table)<10){try{const t=nTabES(await http(`${ES_BASE}/v2/sports/soccer/${lg.es}/standings`));if(cnt(t)>cnt(d.table)){const tm={};Object.values(d.matches).forEach(m=>{[m.h,m.a].forEach(x=>{tm[nm(x.n)]=x})});t.forEach(g=>(g.rows||[]).forEach(r=>{const f=tm[nm(r.t.n)]||Object.values(tm).find(x=>sameTeam(x.n,r.t.n));if(f){r.t.id=f.id;if(f.c)r.t.c=f.c}}));d.table=t;saveSnap(lg)}}catch(e){}}}
  }
 }
 
