@@ -17,12 +17,14 @@ jobs:
       - name: Verileri çek
         env:
           FD_TOKEN: ${{ secrets.FD_TOKEN }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: |
           cat > veri_cek.py <<'PYEOF'
           import json, os, sys, time, datetime as dt
           import urllib.request, urllib.error
 
           TOKEN = os.environ.get("FD_TOKEN", "").strip()
+          ODDS_KEY = os.environ.get("ODDS_API_KEY", "").strip()
           FD_BASE = "https://api.football-data.org/v4"
           ES_BASE = "https://site.api.espn.com/apis"
           OUT = "data"
@@ -239,6 +241,91 @@ jobs:
               return matches, table
 
 
+          # ---------- Oranlar (the-odds-api.com, isteğe bağlı) ----------
+          ODDS_SPORTS = {
+              "TS:4339": "soccer_turkey_super_league", "FD:PL": "soccer_epl", "FD:PD": "soccer_spain_la_liga",
+              "FD:BL1": "soccer_germany_bundesliga", "FD:SA": "soccer_italy_serie_a", "FD:FL1": "soccer_france_ligue_one",
+              "FD:PPL": "soccer_portugal_primeira_liga", "FD:DED": "soccer_netherlands_eredivisie",
+              "FD:CL": "soccer_uefa_champs_league", "TS:4481": "soccer_uefa_europa_league", "FD:ELC": "soccer_efl_champ",
+          }
+          ODDS_MIN_AGE_H = 30
+
+
+          def parse_iso(x):
+              return dt.datetime.fromisoformat(x.replace("Z", "+00:00"))
+
+
+          def median(xs):
+              xs = sorted(x for x in xs if x)
+              n = len(xs)
+              if not n:
+                  return None
+              return round(xs[n // 2] if n % 2 else (xs[n // 2 - 1] + xs[n // 2]) / 2, 2)
+
+
+          def get_odds(url):
+              req = urllib.request.Request(url, headers=UA)
+              with urllib.request.urlopen(req, timeout=40) as r:
+                  return json.loads(r.read().decode("utf-8")), r.headers.get("x-requests-remaining")
+
+
+          def fetch_odds():
+              if not ODDS_KEY:
+                  print("ODDS_API_KEY yok, oran çekilmiyor")
+                  return
+              path = os.path.join(OUT, "odds.json")
+              now = dt.datetime.now(dt.timezone.utc)
+              old = {}
+              try:
+                  old = json.load(open(path, encoding="utf-8"))
+                  if (now - parse_iso(old["t"])).total_seconds() < ODDS_MIN_AGE_H * 3600:
+                      print("oranlar yeni, atlandı")
+                      return
+              except Exception:
+                  pass
+              new, fetched, remaining = [], set(), None
+              for app_id, sport in ODDS_SPORTS.items():
+                  try:
+                      j = json.load(open(os.path.join(OUT, app_id.replace(":", "_") + ".json"), encoding="utf-8"))
+                      soon = any(m["status"] == "SCHEDULED" and m["date"] and 0 <= (parse_iso(m["date"]) - now).total_seconds() < 72 * 3600
+                                 for m in j["matches"])
+                  except Exception:
+                      soon = False
+                  if not soon:
+                      continue
+                  if remaining is not None and int(remaining) < 6:
+                      print("kredi azaldı, duruldu")
+                      break
+                  url = ("https://api.the-odds-api.com/v4/sports/%s/odds/?apiKey=%s&regions=eu&markets=h2h,totals&oddsFormat=decimal"
+                         % (sport, ODDS_KEY))
+                  try:
+                      data, remaining = get_odds(url)
+                  except Exception as e:
+                      print("  oran hata", app_id, str(e).replace(ODDS_KEY, "***"))
+                      continue
+                  fetched.add(app_id)
+                  for ev in data:
+                      h, a = ev.get("home_team"), ev.get("away_team")
+                      p1, px, p2, ov, un = [], [], [], [], []
+                      for b in ev.get("bookmakers") or []:
+                          for mk in b.get("markets") or []:
+                              if mk.get("key") == "h2h":
+                                  for o in mk.get("outcomes") or []:
+                                      (p1 if o.get("name") == h else p2 if o.get("name") == a else px).append(o.get("price"))
+                              elif mk.get("key") == "totals":
+                                  for o in mk.get("outcomes") or []:
+                                      if o.get("point") == 2.5:
+                                          (ov if o.get("name") == "Over" else un).append(o.get("price"))
+                      new.append({"lg": app_id, "h": h, "a": a, "date": ev.get("commence_time"),
+                                  "o1": median(p1), "ox": median(px), "o2": median(p2), "ov": median(ov), "un": median(un)})
+                  print("  oran %s: %d maç, kalan kredi %s" % (app_id, len(data), remaining))
+              if not new:
+                  return
+              keep = [e for e in old.get("events", []) if e.get("lg") not in fetched and e.get("date") and parse_iso(e["date"]) > now - dt.timedelta(hours=3)]
+              with open(path, "w", encoding="utf-8") as f:
+                  json.dump({"t": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "remaining": remaining, "events": keep + new}, f, ensure_ascii=False, separators=(",", ":"))
+
+
           def main():
               os.makedirs(OUT, exist_ok=True)
               ok = 0
@@ -266,6 +353,10 @@ jobs:
                       json.dump(doc, f, ensure_ascii=False, separators=(",", ":"))
                   print("  %s: %d maç, %d tablo" % (src, len(matches), len(table)))
                   ok += 1
+              try:
+                  fetch_odds()
+              except Exception as e:
+                  print("oran adımı hata:", str(e).replace(ODDS_KEY, "***") if ODDS_KEY else e)
               with open(os.path.join(OUT, "index.json"), "w") as f:
                   json.dump({"t": dt.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"), "leagues": ok}, f)
               if ok == 0:
